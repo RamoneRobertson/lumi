@@ -2,6 +2,7 @@ class List < ApplicationRecord
   # validation
   validates :name, uniqueness: true
   validates :name, presence: true
+  # validates :bookmarks, uniqueness: { scope: :list }
 
   # Associations
   has_one_attached :photo

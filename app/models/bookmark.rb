@@ -1,7 +1,7 @@
 class Bookmark < ApplicationRecord
   # Validations
   validates :movie_id, :list_id, presence: true
-  validates :movie_id, :list_id, uniqueness: {  scope: :list }
+  validates :list_id, uniqueness: {  scope: :movie_id, message: "This movie is already in the list" }
   validates :comment, length: { minimum: 6 }
 
   # Associations
