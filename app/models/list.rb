@@ -9,5 +9,5 @@ class List < ApplicationRecord
   has_many :bookmarks, dependent: :destroy
   has_many :movies, through: :bookmarks
 
-  enum list_type: { user_list: 0, standard: 1 }
+  # enum list_type: { user_list: 0, standard: 1 }
 end
