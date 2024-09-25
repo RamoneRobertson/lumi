@@ -1,6 +1,6 @@
 class Review < ApplicationRecord
   # Validations
-  validates :comment, length: { in: 6..256 }
+  validates :text, length: { in: 6..256 }
   validates :user_id, :movie_id, presence: true
 
   # Associations
