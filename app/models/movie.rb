@@ -11,5 +11,5 @@ class Movie < ApplicationRecord
 
   # Add tags for genres
   ActsAsTaggableOn.force_lowercase = true
-  acts_as_taggable_on :tags, :genres
+  acts_as_taggable_on :tags, :genres, :languages
 end
