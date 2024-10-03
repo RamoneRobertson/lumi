@@ -14,8 +14,6 @@ tmdb_api_key = "?api_key=#{tmdb_token}"
 base_tmdb_endpoint = "https://api.themoviedb.org/3/movie/"
 genres_tmdb_endpoint = "https://api.themoviedb.org/3/genre/movie/list?api_key=#{tmdb_token}"
 discover_tmdb_endpoint = "https://api.themoviedb.org/3/discover/movie"
-now_playing_endpoint = base_tmdb_endpoint + "now_playing?api_key=#{tmdb_token}"
-
 
 def api_call(url)
   api_data = URI.open(url).read
@@ -67,18 +65,6 @@ def create_movie(movie_info)
   puts "POSTER URL: #{poster}"
   puts
   puts
-
-end
-
-def set_movie_info(movie, data)
-  data["genres"].each do |genre_obj|
-    puts "==============================================="
-    puts "#{movie.title}"
-    puts "genre_tag: #{genre_obj["name"]}"
-    movie.genre_list.add(genre_obj["name"])
-    movie.save!
-    puts
-  end
 end
 
 def add_movie_ids(movie_data)
@@ -153,35 +139,6 @@ end
   movie_data = api_call(base_tmdb_endpoint + "#{movie_id}?api_key=#{tmdb_token}")
   create_movie(movie_data)
 end
-
-# genres_data["genres"].each do |genre|
-#   2.times do
-#     page += 1
-#     movies_data = api_call(discover_tmdb_endpoint + "?api_key=#{tmdb_token}&include_adult=false&with_genres=#{genre["id"]}&page=#{page}")
-#     create_movie(movies_data["results"], genre["name"], tag_name=nil)
-#   end
-
-#   puts
-# end
-
-# Create movies for the other lists
-# puts "=========== MOVIES: OTHER LISTS ============="
-# %w(now_playing popular top_rated upcoming).each do |category|
-#   puts "========================"
-#   movies_data = api_call(base_tmdb_endpoint + "#{category}?api_key=#{tmdb_token}")
-#   create_movie(movies_data["results"], genre_name=nil, category)
-# end
-
-# Get genres for movies missing data
-
-# movies = Movie.all
-# movies.each do |movie|
-#   if movie.genre_list.empty?
-#    movie_data = api_call("#{base_tmdb_endpoint}#{movie.tmdb_id}?api_key=#{tmdb_token}")
-#    set_movie_info(movie, movie_data)
-#   end
-
-# end
 
 # ===============================================
 # BOOKMARKS CREATION
