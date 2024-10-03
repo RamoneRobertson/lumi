@@ -5,6 +5,7 @@ User.destroy_all
 Movie.destroy_all
 
 @tmdb_ids = Hash.new
+@languages = ["ja", "vi", "zh", "hi", "es", "fr", "ar", "bn", "ru", "pt", "ur", "de"]
 motn_token = ENV["MOTN_KEY"]
 tmdb_token = ENV["TMDB_KEY"]
 tmdb_api_key = "?api_key=#{tmdb_token}"
@@ -22,32 +23,33 @@ def api_call(url)
   JSON.parse(api_data)
 end
 
-def create_movie(movies_list, genre_name, tag_name)
-  movies_list.each do |movie|
-    puts "==============================================="
-    puts "Creating movie: #{movie["title"]}"
+def create_movie(movie_info)
+  # title = movie_info["title"] if @tmdb_ids.has_value?(movie_info["title"]) == false
+  collection = movie_info["belongs_to_collection"]["name"] if movie_info["belongs_to_collection"] != nil
+  studio = movie_info["production_companies"][0]["id"] if movie_info["production_companies"].empty? == false
+  poster =  "https://image.tmdb.org/t/p/original" + movie_info["poster_path"] if movie_info["poster_path"] != nil
+  puts "==============================================="
+  puts "Creating movie: #{movie_info["title"]}"
+  movie = Movie.new(title: movie_info["title"],
+                    overview: movie_info["overview"],
+                    rating: movie_info["vote_average"],
+                    runtime: movie_info["runtime"],
+                    poster_url: poster,
+                    release_date: movie_info["release_date"],
+                    tmdb_id: movie_info["id"],
+                    imdb_id: movie_info["imdb_id"],
+                    collection_id: collection,
+                    production_company_id: studio
+                    )
 
-    movie = Movie.new(title: movie["title"],
-                      overview: movie["overview"],
-                      rating: movie["vote_average"],
-                      runtime: 102,
-                      poster_url: "https://image.tmdb.org/t/p/original" + movie["poster_path"],
-                      release_date: movie["release_date"],
-                      tmdb_id: movie["id"]
-                      )
-
-    movie.genre_list.add(genre_name)
-    if Movie.exists?(title: movie["title"]) == false
-      movie.save!
-    else
-      puts "==============================================="
-      puts "Adding genre #{genre_name} to #{movie["title"]}"
-      movie = Movie.find_by(title: movie["title"])
-      movie.genre_list.add(genre_name) if genre_name.nil? != true
-      movie.tag_list.add(tag_name) if tag_name.nil? != true
-      movie.save!
-    end
-  end
+  movie.save!
+  puts
+  puts "TMDB ID: #{movie_info["id"]}"
+  puts "COLLECTION ID: #{collection}"
+  puts "STUDIO ID: #{studio}"
+  puts "POSTER URL: #{poster}"
+  puts
+  puts
 end
 
 def set_movie_info(movie, data)
@@ -66,6 +68,7 @@ def add_movie_ids(movie_data)
     puts "==============================================="
     puts "Adding #{movie["id"]}: #{movie["title"]} to hash file"
     @tmdb_ids[movie["id"]] = movie["title"] if @tmdb_ids.key?(movie["id"]) == false
+    puts @tmdb_ids.count
     puts
   end
 end
@@ -93,17 +96,16 @@ puts "=========== OTHER LISTS ============="
 end
 
 # ===============================================
-# MOVIES CREATION
+# GET MOVIES IDS
 # ===============================================
 
 # Get ids of all movies from each Genre
 page = 0
 genres_data["genres"].each do |genre|
-  3.times do
+  2.times do
     page += 1
     movies_data = api_call(discover_tmdb_endpoint + "?api_key=#{tmdb_token}&include_adult=false&with_genres=#{genre["id"]}&page=#{page}")
     add_movie_ids(movies_data)
-    puts @tmdb_ids.count
   end
 end
 
@@ -114,12 +116,25 @@ end
     add_movie_ids(movies_data)
   end
 
-  @tmdb_ids.each do |movie_id, title|
+# Get ids from different languages
+page = 0
+@languages.each do |lang|
+  2.times do
     puts "==============================================="
-    movie_data = api_call(base_tmdb_endpoint + "#{movie_id}?api_key=#{tmdb_token}")
-    # create_movie(movie_data)
-    puts movie_data
+    page += 1
+    movies_data = api_call(discover_tmdb_endpoint + "#{tmdb_api_key}&with_original_language=#{lang}&page=#{page}")
+    add_movie_ids(movies_data)
   end
+end
+
+# ===============================================
+# CREATE MOVIES
+# ===============================================
+
+@tmdb_ids.each do |movie_id, title|
+  movie_data = api_call(base_tmdb_endpoint + "#{movie_id}?api_key=#{tmdb_token}")
+  create_movie(movie_data)
+end
 
 # genres_data["genres"].each do |genre|
 #   2.times do

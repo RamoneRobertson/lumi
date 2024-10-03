@@ -2,7 +2,7 @@ class Movie < ApplicationRecord
   # Validations
   validates :title, presence: true
   validates :rating, :runtime, numericality: true
-  validates :title, uniqueness: true
+  # validates :title, uniqueness: true
 
 
   # Associations
