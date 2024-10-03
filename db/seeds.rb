@@ -25,7 +25,7 @@ end
 
 def create_movie(movie_info)
   # title = movie_info["title"] if @tmdb_ids.has_value?(movie_info["title"]) == false
-  collection = movie_info["belongs_to_collection"]["name"] if movie_info["belongs_to_collection"] != nil
+  collection = movie_info["belongs_to_collection"]["id"] if movie_info["belongs_to_collection"] != nil
   studio = movie_info["production_companies"][0]["id"] if movie_info["production_companies"].empty? == false
   poster =  "https://image.tmdb.org/t/p/original" + movie_info["poster_path"] if movie_info["poster_path"] != nil
   puts "==============================================="
