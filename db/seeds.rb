@@ -4,8 +4,10 @@ List.destroy_all
 User.destroy_all
 Movie.destroy_all
 
+@tmdb_ids = Hash.new
 motn_token = ENV["MOTN_KEY"]
 tmdb_token = ENV["TMDB_KEY"]
+tmdb_api_key = "?api_key=#{tmdb_token}"
 
 # ENDPOINTS for TMDB
 base_tmdb_endpoint = "https://api.themoviedb.org/3/movie/"
@@ -15,8 +17,8 @@ now_playing_endpoint = base_tmdb_endpoint + "now_playing?api_key=#{tmdb_token}"
 # poster_base_url = "https://image.tmdb.org/t/p/original"
 
 
-def api_call(endpoint)
-  api_data = URI.open(endpoint).read
+def api_call(url)
+  api_data = URI.open(url).read
   JSON.parse(api_data)
 end
 
@@ -59,6 +61,15 @@ def set_movie_info(movie, data)
   end
 end
 
+def add_movie_ids(movie_data)
+  movie_data["results"].each do |movie|
+    puts "==============================================="
+    puts "Adding #{movie["id"]}: #{movie["title"]} to hash file"
+    @tmdb_ids[movie["id"]] = movie["title"] if @tmdb_ids.key?(movie["id"]) == false
+    puts
+  end
+end
+
 # ===============================================
 # LISTS CREATION
 # ===============================================
@@ -75,7 +86,7 @@ end
 # Create Other Lists
 puts "=========== OTHER LISTS ============="
 %w(now_playing popular top_rated upcoming).each do |category|
-  puts "========================"
+  puts "==============================================="
   puts "Creating new list: #{category}"
   List.create!(name: category)
   puts
@@ -85,31 +96,59 @@ end
 # MOVIES CREATION
 # ===============================================
 
-# Create Movies for each Genre
+# Get ids of all movies from each Genre
+page = 0
 genres_data["genres"].each do |genre|
-  movies_data = api_call(discover_tmdb_endpoint + "?api_key=#{tmdb_token}&include_adult=false&with_genres=#{genre["id"]}")
-  create_movie(movies_data["results"], genre["name"], tag_name=nil)
-  puts
+  3.times do
+    page += 1
+    movies_data = api_call(discover_tmdb_endpoint + "?api_key=#{tmdb_token}&include_adult=false&with_genres=#{genre["id"]}&page=#{page}")
+    add_movie_ids(movies_data)
+    puts @tmdb_ids.count
+  end
 end
 
-# Create movies for the other lists
-puts "=========== MOVIES: OTHER LISTS ============="
+# Get ids from now_playing, top_rated, and upcoming movies
 %w(now_playing popular top_rated upcoming).each do |category|
-  puts "========================"
-  movies_data = api_call(base_tmdb_endpoint + "#{category}?api_key=#{tmdb_token}")
-  create_movie(movies_data["results"], genre_name=nil, category)
-end
+  puts "==============================================="
+    movies_data = api_call(base_tmdb_endpoint + "#{category}?api_key=#{tmdb_token}")
+    add_movie_ids(movies_data)
+  end
+
+  @tmdb_ids.each do |movie_id, title|
+    puts "==============================================="
+    movie_data = api_call(base_tmdb_endpoint + "#{movie_id}?api_key=#{tmdb_token}")
+    # create_movie(movie_data)
+    puts movie_data
+  end
+
+# genres_data["genres"].each do |genre|
+#   2.times do
+#     page += 1
+#     movies_data = api_call(discover_tmdb_endpoint + "?api_key=#{tmdb_token}&include_adult=false&with_genres=#{genre["id"]}&page=#{page}")
+#     create_movie(movies_data["results"], genre["name"], tag_name=nil)
+#   end
+
+#   puts
+# end
+
+# Create movies for the other lists
+# puts "=========== MOVIES: OTHER LISTS ============="
+# %w(now_playing popular top_rated upcoming).each do |category|
+#   puts "========================"
+#   movies_data = api_call(base_tmdb_endpoint + "#{category}?api_key=#{tmdb_token}")
+#   create_movie(movies_data["results"], genre_name=nil, category)
+# end
 
 # Get genres for movies missing data
 
-movies = Movie.all
-movies.each do |movie|
-  if movie.genre_list.empty?
-   movie_data = api_call("#{base_tmdb_endpoint}#{movie.tmdb_id}?api_key=#{tmdb_token}")
-   set_movie_info(movie, movie_data)
-  end
+# movies = Movie.all
+# movies.each do |movie|
+#   if movie.genre_list.empty?
+#    movie_data = api_call("#{base_tmdb_endpoint}#{movie.tmdb_id}?api_key=#{tmdb_token}")
+#    set_movie_info(movie, movie_data)
+#   end
 
-end
+# end
 
 # ===============================================
 # BOOKMARKS CREATION
