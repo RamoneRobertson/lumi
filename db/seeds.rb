@@ -20,7 +20,7 @@ def api_call(url)
   JSON.parse(api_data)
 end
 
-def create_movie(movie_info)
+def create_movie(movie_info, tag_info)
   # title = movie_info["title"] if @tmdb_ids.has_value?(movie_info["title"]) == false
   collection = movie_info["belongs_to_collection"]["id"] if movie_info["belongs_to_collection"] != nil
   studio = movie_info["production_companies"][0]["id"] if movie_info["production_companies"].empty? == false
@@ -51,11 +51,14 @@ def create_movie(movie_info)
   # Add language tags
   languages = movie_info["spoken_languages"]
   languages.each do |lang|
-    puts "language_tag: #{lang["english_name"]}"
+    puts "language_tag: #{lang["english_name"].downcase}"
     movie.language_list.add(lang["english_name"].downcase)
   end
   puts
 
+  # Add list_tag (now_playing, popular, top_rated, upcoming)
+  puts "list_tag: #{tag_info}" if tag_info != nil
+  movie.tag_list.add(tag_info) if tag_info != nil
 
   movie.save!
   puts
@@ -71,7 +74,7 @@ def add_movie_ids(movie_data, category=nil)
   movie_data["results"].each do |movie|
     puts "==============================================="
     puts "Adding #{movie["id"]}: #{movie["title"]} to hash file"
-    @tmdb_ids[movie["id"]] = movie["title"] if @tmdb_ids.key?(movie["id"]) == false
+    @tmdb_ids[movie["id"]] = category if @tmdb_ids.key?(movie["id"]) == false
     puts "COUNT: #{@tmdb_ids.count}"
     puts
   end
@@ -135,9 +138,9 @@ end
 # CREATE MOVIES
 # ===============================================
 
-@tmdb_ids.each do |movie_id, title|
+@tmdb_ids.each do |movie_id, tag_info|
   movie_data = api_call(base_tmdb_endpoint + "#{movie_id}?api_key=#{tmdb_token}")
-  create_movie(movie_data)
+  create_movie(movie_data, tag_info)
 end
 
 # ===============================================
