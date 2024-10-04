@@ -67,7 +67,7 @@ def create_movie(movie_info)
   puts
 end
 
-def add_movie_ids(movie_data)
+def add_movie_ids(movie_data, category=nil)
   movie_data["results"].each do |movie|
     puts "==============================================="
     puts "Adding #{movie["id"]}: #{movie["title"]} to hash file"
@@ -117,7 +117,7 @@ end
 %w(now_playing popular top_rated upcoming).each do |category|
   puts "==============================================="
     movies_data = api_call(base_tmdb_endpoint + "#{category}?api_key=#{tmdb_token}")
-    add_movie_ids(movies_data)
+    add_movie_ids(movies_data, category)
   end
 
 # Get ids from different languages
