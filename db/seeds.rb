@@ -72,6 +72,8 @@ end
 
 def create_bookmark(list_id, movies)
   movies.each do  |movie|
+    puts "==============================================="
+    puts "Adding #{movie.title}"
     bookmark = Bookmark.new(list_id: list_id, movie_id: movie.id)
     bookmark.save!
   end
@@ -116,7 +118,7 @@ end
 # Get ids of all movies from each Genre
 page = 0
 genres_data["genres"].each do |genre|
-  2.times do
+  1.times do
     page += 1
     movies_data = api_call(discover_tmdb_endpoint + "?api_key=#{tmdb_token}&include_adult=false&with_genres=#{genre["id"]}&page=#{page}")
     add_movie_ids(movies_data)
@@ -133,7 +135,7 @@ end
 # Get ids from different languages
 page = 0
 @languages.each do |lang|
-  2.times do
+  1.times do
     puts "==============================================="
     page += 1
     movies_data = api_call(discover_tmdb_endpoint + "#{tmdb_api_key}&with_original_language=#{lang}&page=#{page}")
