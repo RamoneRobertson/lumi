@@ -5,7 +5,7 @@ User.destroy_all
 Movie.destroy_all
 
 @tmdb_ids = Hash.new
-@languages = ["ja", "vi", "ko", "zh", "hi", "es", "fr", "ar", "bn", "ru", "pt", "ur", "de"]
+@languages = ["ja", "vi", "ko", "zh", "es", "fr", "it", "de", "th"]
 motn_token = ENV["MOTN_KEY"]
 tmdb_token = ENV["TMDB_KEY"]
 tmdb_api_key = "?api_key=#{tmdb_token}"
@@ -70,6 +70,13 @@ def create_movie(movie_info, tag_info)
   puts
 end
 
+def create_bookmark(list_id, movies)
+  movies.each do  |movie|
+    bookmark = Bookmark.new(list_id: list_id, movie_id: movie.id)
+    bookmark.save!
+  end
+end
+
 def add_movie_ids(movie_data, category=nil)
   movie_data["results"].each do |movie|
     puts "==============================================="
@@ -87,7 +94,7 @@ end
 # Create Genre List
 genres_data = api_call(genres_tmdb_endpoint)
 genres_data["genres"].each do |genre|
-  puts "========================"
+  puts "==============================================="
   puts "Creating new list: #{genre["name"]}"
   List.create!(name: genre["name"].downcase)
   puts
@@ -103,13 +110,13 @@ puts "=========== OTHER LISTS ============="
 end
 
 # ===============================================
-# GET MOVIES IDS
+# GET MOVIE IDS
 # ===============================================
 
 # Get ids of all movies from each Genre
 page = 0
 genres_data["genres"].each do |genre|
-  1.times do
+  2.times do
     page += 1
     movies_data = api_call(discover_tmdb_endpoint + "?api_key=#{tmdb_token}&include_adult=false&with_genres=#{genre["id"]}&page=#{page}")
     add_movie_ids(movies_data)
@@ -126,7 +133,7 @@ end
 # Get ids from different languages
 page = 0
 @languages.each do |lang|
-  1.times do
+  2.times do
     puts "==============================================="
     page += 1
     movies_data = api_call(discover_tmdb_endpoint + "#{tmdb_api_key}&with_original_language=#{lang}&page=#{page}")
@@ -146,3 +153,9 @@ end
 # ===============================================
 # BOOKMARKS CREATION
 # ===============================================
+
+@lists = List.all
+@lists.each do |list|
+  movies = Movie.tagged_with(list.name)
+  create_bookmark(list.id, movies)
+end
