@@ -14,6 +14,7 @@ tmdb_api_key = "?api_key=#{tmdb_token}"
 base_tmdb_endpoint = "https://api.themoviedb.org/3/movie/"
 genres_tmdb_endpoint = "https://api.themoviedb.org/3/genre/movie/list?api_key=#{tmdb_token}"
 discover_tmdb_endpoint = "https://api.themoviedb.org/3/discover/movie"
+collection_tmdb_endpoint = "https://api.themoviedb.org/3/collection/"
 
 def api_call(url)
   api_data = URI.open(url).read
@@ -89,6 +90,12 @@ def add_movie_ids(movie_data, category=nil)
   end
 end
 
+def create_collection(collection_data)
+  puts "==============================================="
+  puts "Creating new collection: #{collection_data["name"]}"
+  List.exists?(name: collection_data["name"]) ? "Unable to create list" : List.create!(name: collection_data["name"])
+end
+
 # ===============================================
 # LISTS CREATION
 # ===============================================
@@ -118,7 +125,7 @@ end
 # Get ids of all movies from each Genre
 page = 0
 genres_data["genres"].each do |genre|
-  1.times do
+  3.times do
     page += 1
     movies_data = api_call(discover_tmdb_endpoint + "?api_key=#{tmdb_token}&include_adult=false&with_genres=#{genre["id"]}&page=#{page}")
     add_movie_ids(movies_data)
@@ -135,7 +142,7 @@ end
 # Get ids from different languages
 page = 0
 @languages.each do |lang|
-  1.times do
+  3.times do
     puts "==============================================="
     page += 1
     movies_data = api_call(discover_tmdb_endpoint + "#{tmdb_api_key}&with_original_language=#{lang}&page=#{page}")
@@ -151,6 +158,16 @@ end
   movie_data = api_call(base_tmdb_endpoint + "#{movie_id}?api_key=#{tmdb_token}")
   create_movie(movie_data, tag_info)
 end
+
+# ===============================================
+# COLECTIONS LIST CREATION
+# ===============================================
+movies_collections = Movie.select(:collection_id).where.not(collection_id: nil).uniq!(:collection_id)
+movies_collections.each do |collection|
+  collection_data = api_call(collection_tmdb_endpoint + "#{collection.collection_id}#{tmdb_api_key}")
+  create_collection(collection_data)
+end
+
 
 # ===============================================
 # BOOKMARKS CREATION
