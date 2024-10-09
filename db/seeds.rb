@@ -94,8 +94,8 @@ def create_collection(collection_data)
   puts "==============================================="
   puts "Creating new collection: #{collection_data["name"]}"
   # Create Collection List
-  backdrop_img = "https://image.tmdb.org/t/p/original" + collection_data["backdrop_path"]
-  List.exists?(name: collection_data["name"]) ? "Unable to create list" : List.create!(name: collection_data["name"])
+  backdrop = "https://image.tmdb.org/t/p/original" + collection_data["backdrop_path"] if collection_data["backdrop_path"] != nil
+  List.exists?(name: collection_data["name"]) ? "Unable to create list" : List.create!(name: collection_data["name"], backdrop: backdrop)
 
   tmdb_key = ENV["TMDB_KEY"]
   # Create any missing movies
