@@ -5,7 +5,7 @@ User.destroy_all
 Movie.destroy_all
 
 @tmdb_ids = Hash.new
-@languages = ["ja", "vi", "ko", "zh", "es", "fr", "it", "de", "th"]
+@languages = ["ja", "vi", "ko", "zh", "es", "fr", "it", "de"]
 motn_token = ENV["MOTN_KEY"]
 tmdb_token = ENV["TMDB_KEY"]
 tmdb_api_key = "?api_key=#{tmdb_token}"
@@ -94,6 +94,7 @@ def create_collection(collection_data)
   puts "==============================================="
   puts "Creating new collection: #{collection_data["name"]}"
   # Create Collection List
+  backdrop_img = "https://image.tmdb.org/t/p/original" + collection_data["backdrop_path"]
   List.exists?(name: collection_data["name"]) ? "Unable to create list" : List.create!(name: collection_data["name"])
 
   tmdb_key = ENV["TMDB_KEY"]
@@ -138,14 +139,14 @@ end
 # ===============================================
 
 # Get ids of all movies from each Genre
-# page = 0
-# genres_data["genres"].each do |genre|
-#   3.times do
-#     page += 1
-#     movies_data = api_call(discover_tmdb_endpoint + "?api_key=#{tmdb_token}&include_adult=false&with_genres=#{genre["id"]}&page=#{page}")
-#     add_movie_ids(movies_data)
-#   end
-# end
+page = 0
+genres_data["genres"].each do |genre|
+  2.times do
+    page += 1
+    movies_data = api_call(discover_tmdb_endpoint + "?api_key=#{tmdb_token}&include_adult=false&with_genres=#{genre["id"]}&page=#{page}")
+    add_movie_ids(movies_data)
+  end
+end
 
 # Get ids from now_playing, top_rated, and upcoming movies
 %w(now_playing popular top_rated upcoming).each do |category|
@@ -155,15 +156,15 @@ end
   end
 
 # Get ids from different languages
-# page = 0
-# @languages.each do |lang|
-#   3.times do
-#     puts "==============================================="
-#     page += 1
-#     movies_data = api_call(discover_tmdb_endpoint + "#{tmdb_api_key}&with_original_language=#{lang}&page=#{page}")
-#     add_movie_ids(movies_data)
-#   end
-# end
+page = 0
+@languages.each do |lang|
+  2.times do
+    puts "==============================================="
+    page += 1
+    movies_data = api_call(discover_tmdb_endpoint + "#{tmdb_api_key}&with_original_language=#{lang}&page=#{page}")
+    add_movie_ids(movies_data)
+  end
+end
 
 # ===============================================
 # CREATE MOVIES

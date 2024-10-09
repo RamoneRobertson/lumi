@@ -53,6 +53,7 @@ gem "sassc-rails"
 gem 'react-rails'
 gem 'acts-as-taggable-on'
 gem 'rspec-rails'
+gem 'faker', :git => 'https://github.com/faker-ruby/faker.git', :branch => 'main'
 
 group :development, :test do
   gem "dotenv-rails"
