@@ -33,8 +33,8 @@ def create_movie(movie_info, tag_info)
   # title = movie_info["title"] if @tmdb_ids.has_value?(movie_info["title"]) == false
   collection = movie_info["belongs_to_collection"]["id"] if movie_info["belongs_to_collection"] != nil
   studio = movie_info["production_companies"][0]["id"] if movie_info["production_companies"].empty? == false
-  poster =  "https://image.tmdb.org/t/p/original" + movie_info["poster_path"] if movie_info["poster_path"] != nil
-  backdrop =  "https://image.tmdb.org/t/p/original" + movie_info["poster_path"] if movie_info["backdrop_path"] != nil
+  poster = "https://image.tmdb.org/t/p/original" + movie_info["poster_path"] if movie_info["poster_path"] != nil
+  backdrop = "https://image.tmdb.org/t/p/original" + movie_info["backdrop_path"] if movie_info["backdrop_path"] != nil
 
   puts "==============================================="
   puts "Creating movie: #{movie_info["title"]}"
@@ -120,7 +120,6 @@ def create_collection(collection_data)
       movie.save!
     end
   end
-
 end
 
 # ===============================================
