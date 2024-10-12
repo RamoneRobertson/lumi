@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2024_10_12_073418) do
+ActiveRecord::Schema[7.1].define(version: 2024_10_12_074533) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -75,7 +75,7 @@ ActiveRecord::Schema[7.1].define(version: 2024_10_12_073418) do
     t.string "collection_poster"
     t.integer "production_company_id"
     t.string "backdrop"
-    t.float "poplarity"
+    t.float "popularity"
   end
 
   create_table "reviews", force: :cascade do |t|
