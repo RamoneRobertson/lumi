@@ -17,7 +17,15 @@ discover_tmdb_endpoint = "https://api.themoviedb.org/3/discover/movie"
 collection_tmdb_endpoint = "https://api.themoviedb.org/3/collection/"
 
 def api_call(url)
-  api_data = URI.open(url).read
+  begin
+    api_data = URI.open(url).read
+  rescue OpenURI::HTTPError => e
+    puts "==============================================="
+    puts "An error has occured. Please view the details:"
+    puts e
+    puts
+  end
+
   JSON.parse(api_data)
 end
 
@@ -26,6 +34,7 @@ def create_movie(movie_info, tag_info)
   collection = movie_info["belongs_to_collection"]["id"] if movie_info["belongs_to_collection"] != nil
   studio = movie_info["production_companies"][0]["id"] if movie_info["production_companies"].empty? == false
   poster =  "https://image.tmdb.org/t/p/original" + movie_info["poster_path"] if movie_info["poster_path"] != nil
+  backdrop =  "https://image.tmdb.org/t/p/original" + movie_info["poster_path"] if movie_info["backdrop_path"] != nil
 
   puts "==============================================="
   puts "Creating movie: #{movie_info["title"]}"
@@ -38,7 +47,9 @@ def create_movie(movie_info, tag_info)
                     tmdb_id: movie_info["id"],
                     imdb_id: movie_info["imdb_id"],
                     collection_id: collection,
-                    production_company_id: studio
+                    production_company_id: studio,
+                    backdrop: backdrop,
+                    popularity: movie_info["popularity"]
                     )
 
   # Add genre tags
@@ -141,7 +152,7 @@ end
 # Get ids of all movies from each Genre
 page = 0
 genres_data["genres"].each do |genre|
-  2.times do
+  5.times do
     page += 1
     movies_data = api_call(discover_tmdb_endpoint + "?api_key=#{tmdb_token}&include_adult=false&with_genres=#{genre["id"]}&page=#{page}")
     add_movie_ids(movies_data)
@@ -158,7 +169,7 @@ end
 # Get ids from different languages
 page = 0
 @languages.each do |lang|
-  2.times do
+  5.times do
     puts "==============================================="
     page += 1
     movies_data = api_call(discover_tmdb_endpoint + "#{tmdb_api_key}&with_original_language=#{lang}&page=#{page}")
