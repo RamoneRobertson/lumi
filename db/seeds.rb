@@ -94,7 +94,7 @@ end
 def add_movie_ids(movie_data, category=nil)
   movie_data["results"].each do |movie|
     puts "==============================================="
-    puts "Adding #{movie["id"]}: #{movie["title"]} to hash file"
+    puts "Adding #{movie["id"]}: #{movie["title"]}"
     @tmdb_ids[movie["id"]] = category if @tmdb_ids.key?(movie["id"]) == false
     puts "COUNT: #{@tmdb_ids.count}"
     puts
@@ -151,7 +151,7 @@ end
 # Get ids of all movies from each Genre
 page = 0
 genres_data["genres"].each do |genre|
-  5.times do
+  3.times do
     page += 1
     movies_data = api_call(discover_tmdb_endpoint + "?api_key=#{tmdb_token}&include_adult=false&with_genres=#{genre["id"]}&page=#{page}")
     add_movie_ids(movies_data)
@@ -168,7 +168,7 @@ end
 # Get ids from different languages
 page = 0
 @languages.each do |lang|
-  5.times do
+  3.times do
     puts "==============================================="
     page += 1
     movies_data = api_call(discover_tmdb_endpoint + "#{tmdb_api_key}&with_original_language=#{lang}&page=#{page}")
@@ -183,6 +183,7 @@ end
 @tmdb_ids.each do |movie_id, tag_info|
   movie_data = api_call(@base_tmdb_endpoint + "#{movie_id}?api_key=#{tmdb_token}")
   create_movie(movie_data, tag_info)
+  @tmdb_ids.reject!(movie_id)
 end
 
 # ===============================================
@@ -192,6 +193,7 @@ movies_collections = Movie.select(:collection_id).where.not(collection_id: nil).
 movies_collections.each do |collection|
   collection_data = api_call(collection_tmdb_endpoint + "#{collection.collection_id}#{tmdb_api_key}")
   create_collection(collection_data)
+  movies_collections.reject!(collection)
 end
 
 
