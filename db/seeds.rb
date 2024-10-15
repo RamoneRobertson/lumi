@@ -17,15 +17,7 @@ discover_tmdb_endpoint = "https://api.themoviedb.org/3/discover/movie"
 collection_tmdb_endpoint = "https://api.themoviedb.org/3/collection/"
 
 def api_call(url)
-  begin
-    api_data = URI.open(url).read
-  rescue OpenURI::HTTPError => e
-    puts "==============================================="
-    puts "An error has occured. Please view the details:"
-    puts e
-    puts
-  end
-
+  api_data = URI.open(url).read
   JSON.parse(api_data)
 end
 
@@ -149,14 +141,14 @@ end
 # ===============================================
 
 # Get ids of all movies from each Genre
-page = 0
-genres_data["genres"].each do |genre|
-  3.times do
-    page += 1
-    movies_data = api_call(discover_tmdb_endpoint + "?api_key=#{tmdb_token}&include_adult=false&with_genres=#{genre["id"]}&page=#{page}")
-    add_movie_ids(movies_data)
-  end
-end
+# page = 0
+# genres_data["genres"].each do |genre|
+#   7.times do
+#     page += 1
+#     movies_data = api_call(discover_tmdb_endpoint + "?api_key=#{tmdb_token}&include_adult=false&with_genres=#{genre["id"]}&page=#{page}")
+#     add_movie_ids(movies_data)
+#   end
+# end
 
 # Get ids from now_playing, top_rated, and upcoming movies
 %w(now_playing popular top_rated upcoming).each do |category|
@@ -166,15 +158,15 @@ end
   end
 
 # Get ids from different languages
-page = 0
-@languages.each do |lang|
-  3.times do
-    puts "==============================================="
-    page += 1
-    movies_data = api_call(discover_tmdb_endpoint + "#{tmdb_api_key}&with_original_language=#{lang}&page=#{page}")
-    add_movie_ids(movies_data)
-  end
-end
+# page = 0
+# @languages.each do |lang|
+#   7.times do
+#     puts "==============================================="
+#     page += 1
+#     movies_data = api_call(discover_tmdb_endpoint + "#{tmdb_api_key}&with_original_language=#{lang}&page=#{page}")
+#     add_movie_ids(movies_data)
+#   end
+# end
 
 # ===============================================
 # CREATE MOVIES
@@ -182,8 +174,14 @@ end
 
 @tmdb_ids.each do |movie_id, tag_info|
   movie_data = api_call(@base_tmdb_endpoint + "#{movie_id}?api_key=#{tmdb_token}")
-  create_movie(movie_data, tag_info)
-  @tmdb_ids.reject!(movie_id)
+  begin
+    create_movie(movie_data, tag_info)
+  rescue OpenURI::HTTPError => e
+    puts "An Error Has Occured. Please View The Details:"
+    OpenURI::HTTPError => e
+    puts e.message
+    next
+  end
 end
 
 # ===============================================
@@ -193,7 +191,7 @@ movies_collections = Movie.select(:collection_id).where.not(collection_id: nil).
 movies_collections.each do |collection|
   collection_data = api_call(collection_tmdb_endpoint + "#{collection.collection_id}#{tmdb_api_key}")
   create_collection(collection_data)
-  movies_collections.reject!(collection)
+  movies_collections.reject(collection)
 end
 
 
