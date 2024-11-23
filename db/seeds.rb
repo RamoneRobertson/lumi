@@ -1,5 +1,6 @@
 require 'json'
 puts "========== Clearing the database =========="
+Bookmark.destroy_all
 List.destroy_all
 User.destroy_all
 Movie.destroy_all
@@ -16,63 +17,63 @@ genres_tmdb_endpoint = "https://api.themoviedb.org/3/genre/movie/list?api_key=#{
 discover_tmdb_endpoint = "https://api.themoviedb.org/3/discover/movie"
 collection_tmdb_endpoint = "https://api.themoviedb.org/3/collection/"
 
+# Makes an API call using an url endpoint
+# Returns the response as JSON
 def api_call(url)
   api_data = URI.open(url).read
   JSON.parse(api_data)
 end
 
-def create_movie(movie_info, tag_info)
-  # title = movie_info["title"] if @tmdb_ids.has_value?(movie_info["title"]) == false
-  collection = movie_info["belongs_to_collection"]["id"] if movie_info["belongs_to_collection"] != nil
-  studio = movie_info["production_companies"][0]["id"] if movie_info["production_companies"].empty? == false
-  poster = "https://image.tmdb.org/t/p/original" + movie_info["poster_path"] if movie_info["poster_path"] != nil
-  backdrop = "https://image.tmdb.org/t/p/original" + movie_info["backdrop_path"] if movie_info["backdrop_path"] != nil
 
-  puts "==============================================="
-  puts "Creating movie: #{movie_info["title"]}"
-  movie = Movie.new(title: movie_info["title"],
-                    overview: movie_info["overview"],
-                    rating: movie_info["vote_average"],
-                    runtime: movie_info["runtime"],
-                    poster_url: poster,
-                    release_date: movie_info["release_date"],
-                    tmdb_id: movie_info["id"],
-                    imdb_id: movie_info["imdb_id"],
-                    collection_id: collection,
-                    production_company_id: studio,
-                    backdrop: backdrop,
-                    popularity: movie_info["popularity"]
-                    )
+def create_movie(data, tag_info)
+  # Iterate through the response data from the API call (20 movies per API response) - see line 168
+  data["results"].each do  |result|
+    # nil/null check for certain properties. Will error out otherwise
+    collection_id = result["belongs_to_collection"]["id"] if result["belongs_to_collection"] != nil
+    studio_id = result["production_companies"][0]["id"] if result["production_companies"].nil? == false
+    poster_url = "https://image.tmdb.org/t/p/original" + result["poster_path"] if result["poster_path"] != nil
+    backdrop_url = "https://image.tmdb.org/t/p/original" + result["backdrop_path"] if result["backdrop_path"] != nil
 
-  # Add genre tags
-  puts
-  movie_info["genres"].each do |genre|
-    puts "genre_tag: #{genre["name"]}"
-    movie.genre_list.add(genre["name"])
+    puts "==============================================="
+    puts "Title: #{result["title"]}"
+    puts "TMDB ID: #{result["id"]}"
+
+    # Try to get individual movie details
+    # endpoint https://api.themoviedb.org/3/movie/[Movie ID]?[API KEY]
+    begin
+      movie_info = api_call(@base_tmdb_endpoint + "#{result["id"]}?api_key=#{ENV["TMDB_KEY"]}")
+    # Check for an HTTP error
+    rescue OpenURI::HTTPError => e
+      puts "An Error Has Occured. Please View The Details:"
+      OpenURI::HTTPError => e
+      puts e.message
+      next
+    end
+
+    # Create a new Movie record in the DB
+    movie = Movie.new(title: movie_info["title"],
+                overview: movie_info["overview"],
+                rating: movie_info["vote_average"],
+                runtime: movie_info["runtime"],
+                poster_url: poster_url,
+                release_date: movie_info["release_date"],
+                tmdb_id: movie_info["id"],
+                imdb_id: movie_info["imdb_id"],
+                collection_id: collection_id,
+                production_company_id: studio_id,
+                backdrop: backdrop_url,
+                popularity: movie_info["popularity"]
+                )
+    # Add genres to genre list
+    movie.genre_list = movie_info["genres"].pluck("name").join(",")
+
+    # Save the new Movie record
+    movie.save!
+    puts
+    puts
   end
-  puts
-
-  # Add language tags
-  languages = movie_info["spoken_languages"]
-  languages.each do |lang|
-    puts "language_tag: #{lang["english_name"].downcase}"
-    movie.language_list.add(lang["english_name"].downcase)
-  end
-  puts
-
-  # Add list_tag (now_playing, popular, top_rated, upcoming)
-  puts "list_tag: #{tag_info}" if tag_info != nil
-  movie.tag_list.add(tag_info) if tag_info != nil
-
-  movie.save!
-  puts
-  puts "TMDB ID: #{movie_info["id"]}"
-  puts "COLLECTION ID: #{collection}"
-  puts "STUDIO ID: #{studio}"
-  puts "POSTER URL: #{poster}"
-  puts
-  puts
 end
+
 
 def create_bookmark(list_id, movies)
   movies.each do  |movie|
@@ -80,16 +81,6 @@ def create_bookmark(list_id, movies)
     puts "Adding #{movie.title}"
     bookmark = Bookmark.new(list_id: list_id, movie_id: movie.id)
     bookmark.save!
-  end
-end
-
-def add_movie_ids(movie_data, category=nil)
-  movie_data["results"].each do |movie|
-    puts "==============================================="
-    puts "Adding #{movie["id"]}: #{movie["title"]}"
-    @tmdb_ids[movie["id"]] = category if @tmdb_ids.key?(movie["id"]) == false
-    puts "COUNT: #{@tmdb_ids.count}"
-    puts
   end
 end
 
@@ -137,56 +128,33 @@ puts "=========== OTHER LISTS ============="
 end
 
 # ===============================================
-# GET MOVIE IDS
-# ===============================================
-
-# Get ids of all movies from each Genre
-page = 0
-genres_data["genres"].each do |genre|
-  7.times do
-    page += 1
-    movies_data = api_call(discover_tmdb_endpoint + "?api_key=#{tmdb_token}&include_adult=false&with_genres=#{genre["id"]}&page=#{page}")
-    add_movie_ids(movies_data)
-  end
-end
-
-# Get ids from now_playing, top_rated, and upcoming movies
-%w(now_playing popular top_rated upcoming).each do |category|
-  puts "==============================================="
-    movies_data = api_call(@base_tmdb_endpoint + "#{category}?api_key=#{tmdb_token}")
-    add_movie_ids(movies_data, category)
-  end
-
-# Get ids from different languages
-page = 0
-@languages.each do |lang|
-  7.times do
-    puts "==============================================="
-    page += 1
-    movies_data = api_call(discover_tmdb_endpoint + "#{tmdb_api_key}&with_original_language=#{lang}&page=#{page}")
-    add_movie_ids(movies_data)
-  end
-end
-
-# ===============================================
 # CREATE MOVIES
 # ===============================================
 
-@tmdb_ids.each do |movie_id, tag_info|
-  movie_data = api_call(@base_tmdb_endpoint + "#{movie_id}?api_key=#{tmdb_token}")
-  begin
-    create_movie(movie_data, tag_info)
-  rescue OpenURI::HTTPError => e
-    puts "An Error Has Occured. Please View The Details:"
-    OpenURI::HTTPError => e
-    puts e.message
-    next
+# Create Movies from each genre (19 genres in total)
+page = 0
+genres_data["genres"].each do |genre|
+  1.times do
+    page += 1
+    movies_data = api_call(discover_tmdb_endpoint + "?api_key=#{tmdb_token}&include_adult=false&with_genres=#{genre["id"]}&page=#{page}")
+    create_movie(movies_data, genre)
   end
 end
 
-# ===============================================
-# COLECTIONS LIST CREATION
-# ===============================================
+# # Get ids from different languages
+# page = 0
+# @languages.each do |lang|
+#   1.times do
+#     puts "==============================================="
+#     page += 1
+#     movies_data = api_call(discover_tmdb_endpoint + "#{tmdb_api_key}&with_original_language=#{lang}&page=#{page}")
+#     add_movie_ids(movies_data)
+#   end
+# end
+
+# # ===============================================
+# # COLECTIONS LIST CREATION
+# # ===============================================
 movies_collections = Movie.select(:collection_id).where.not(collection_id: nil).uniq!(:collection_id)
 movies_collections.each do |collection|
   collection_data = api_call(collection_tmdb_endpoint + "#{collection.collection_id}#{tmdb_api_key}")
@@ -195,9 +163,9 @@ movies_collections.each do |collection|
 end
 
 
-# ===============================================
-# BOOKMARKS CREATION
-# ===============================================
+# # ===============================================
+# # BOOKMARKS CREATION
+# # ===============================================
 
 @lists = List.all
 @lists.each do |list|
