@@ -20,7 +20,14 @@ collection_tmdb_endpoint = "https://api.themoviedb.org/3/collection/"
 # Makes an API call using an url endpoint
 # Returns the response as JSON
 def api_call(url)
-  api_data = URI.open(url).read
+  begin
+    api_data = URI.open(url).read
+  rescue OpenURI::HTTPError => e
+    puts "API call failed: #{e.message}"
+    nil
+  end
+
+
   JSON.parse(api_data)
 end
 
@@ -28,15 +35,6 @@ end
 def create_movie(data, tag_info)
   # Iterate through the response data from the API call (20 movies per API response) - see line 168
   data["results"].each do  |result|
-    # nil/null check for certain properties. Will error out otherwise
-    collection_id = result["belongs_to_collection"]["id"] if result["belongs_to_collection"] != nil
-    studio_id = result["production_companies"][0]["id"] if result["production_companies"].nil? == false
-    poster_url = "https://image.tmdb.org/t/p/original" + result["poster_path"] if result["poster_path"] != nil
-    backdrop_url = "https://image.tmdb.org/t/p/original" + result["backdrop_path"] if result["backdrop_path"] != nil
-
-    puts "==============================================="
-    puts "Title: #{result["title"]}"
-    puts "TMDB ID: #{result["id"]}"
 
     # Try to get individual movie details
     # endpoint https://api.themoviedb.org/3/movie/[Movie ID]?[API KEY]
@@ -50,6 +48,21 @@ def create_movie(data, tag_info)
       next
     end
 
+    # nil/null check for certain properties. Will error out otherwise
+    collection_id = movie_info.dig("belongs_to_collection", "id") if movie_info["belongs_to_collection"] != nil
+    # studio_id = movie_info.dig("production_companies")[0]["id"] if movie_info["production_companies"].nil? == false || movie_info["title"] == "Taken 2"
+    poster_url = "https://image.tmdb.org/t/p/original" + movie_info["poster_path"] if movie_info["poster_path"] != nil
+    backdrop_url = "https://image.tmdb.org/t/p/original" + movie_info["backdrop_path"] if movie_info["backdrop_path"] != nil
+
+
+    puts "==============================================="
+    puts "Title: #{movie_info["title"]}"
+    puts "TMDB ID: #{movie_info["id"]}"
+    puts "Collection ID: #{collection_id}"
+    # puts "Studio ID: #{studio_id}"
+    puts "Poster Url #{poster_url}"
+    puts "Backdrop Url #{backdrop_url}"
+
     # Create a new Movie record in the DB
     movie = Movie.new(title: movie_info["title"],
                 overview: movie_info["overview"],
@@ -60,7 +73,7 @@ def create_movie(data, tag_info)
                 tmdb_id: movie_info["id"],
                 imdb_id: movie_info["imdb_id"],
                 collection_id: collection_id,
-                production_company_id: studio_id,
+                # production_company_id: studio_id,
                 backdrop: backdrop_url,
                 popularity: movie_info["popularity"]
                 )
@@ -85,6 +98,7 @@ def create_bookmark(list_id, movies)
 end
 
 def create_collection(collection_data)
+  movie_record = Movie.find_by(tmdb_id: collection_data["id"])
   puts "==============================================="
   puts "Creating new collection: #{collection_data["name"]}"
   # Create Collection List
@@ -93,16 +107,17 @@ def create_collection(collection_data)
 
   tmdb_key = ENV["TMDB_KEY"]
   # Create any missing movies
-  collection_data["parts"].each do |movie|
-    movie_data = api_call(@base_tmdb_endpoint + "#{movie["id"]}?api_key=#{tmdb_key}")
-    if Movie.find_by(tmdb_id: movie["id"]).nil?
-      create_movie(movie_data, collection_data["name"])
-    else
-      movie = Movie.find_by(tmdb_id: movie["id"])
-      movie.tag_list.add(collection_data["name"])
-      movie.save!
-    end
-  end
+  create_movie(collection_data, collection_data["name"])
+  # collection_data["parts"].each do |movie|
+  #   movie_data = api_call(@base_tmdb_endpoint + "#{movie["id"]}?api_key=#{tmdb_key}")
+  #   if movie_record.nil?
+  #     create_movie(movie_data, collection_data["name"])
+  #   else
+  #     movie = movie_record
+  #     movie.tag_list.add(collection_data["name"])
+  #     movie.save!
+  #   end
+  # end
 end
 
 # ===============================================
@@ -153,14 +168,14 @@ end
 # end
 
 # # ===============================================
-# # COLECTIONS LIST CREATION
+# # COLLECTIONS CREATION
 # # ===============================================
-movies_collections = Movie.select(:collection_id).where.not(collection_id: nil).uniq!(:collection_id)
-movies_collections.each do |collection|
-  collection_data = api_call(collection_tmdb_endpoint + "#{collection.collection_id}#{tmdb_api_key}")
-  create_collection(collection_data)
-  movies_collections.reject(collection)
-end
+# movies_collections = Movie.select(:collection_id).where.not(collection_id: nil).distinct
+# movies_collections.each do |collection|
+#   collection_data = api_call(collection_tmdb_endpoint + "#{collection.collection_id}#{tmdb_api_key}")
+#   create_collection(collection_data)
+#   movies_collections.reject(collection)
+# end
 
 
 # # ===============================================
