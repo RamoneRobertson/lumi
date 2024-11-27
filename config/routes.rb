@@ -9,4 +9,5 @@ Rails.application.routes.draw do
 
   # Defines the root path route ("/")
   root to: "movies#index"
+  get "movies", to: "movies#index"
 end

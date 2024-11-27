@@ -1,1 +1,10 @@
 <div>Welcome to the home page!</div>
+<div class="container">
+  <div class="row">
+    <div class="col-12">
+      <% @lists.each do |list| %>
+      <div class="movie-card"><%= list.name %></div>
+      <% end %>
+    </div>
+  </div>
+</div>
