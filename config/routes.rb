@@ -15,4 +15,6 @@ Rails.application.routes.draw do
 
   # show one movie
   get "/movies/:id", to: "movies#show", as: :movie
+
+  # Show movies you've bookmarked
 end

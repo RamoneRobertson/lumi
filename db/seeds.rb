@@ -10,6 +10,10 @@ Movie.destroy_all
 motn_token = ENV["MOTN_KEY"]
 tmdb_token = ENV["TMDB_KEY"]
 tmdb_api_key = "?api_key=#{tmdb_token}"
+admin_pwd = ENV["ADMIN_PWD"]
+admin_email = ENV["ADMIN_EMAIL"]
+user_pwd = ENV["USER_PWD"]
+user_email = ENV["USER_EMAIL"]
 
 # ENDPOINTS for TMDB
 @base_tmdb_endpoint = "https://api.themoviedb.org/3/movie/"
@@ -121,15 +125,28 @@ def create_collection(collection_data)
 end
 
 # ===============================================
+# USER CREATION
+# ===============================================
+admin_user = User.new(email: admin_email, password: admin_pwd)
+admin_user.save!
+
+test_user = User.new(email: user_email, password: user_pwd)
+test_user.save!
+
+
+# ===============================================
 # LISTS CREATION
 # ===============================================
+
+user_list = List.new(name: "My List", list_type: 0, user_id: test_user.id)
+user_list.save!
 
 # Create Genre List
 genres_data = api_call(genres_tmdb_endpoint)
 genres_data["genres"].each do |genre|
   puts "==============================================="
   puts "Creating new list: #{genre["name"]}"
-  List.create!(name: genre["name"].downcase)
+  List.create!(name: genre["name"].downcase, list_type: 1)
   puts
 end
 
@@ -138,7 +155,7 @@ puts "=========== OTHER LISTS ============="
 %w(now_playing popular top_rated upcoming).each do |category|
   puts "==============================================="
   puts "Creating new list: #{category}"
-  List.create!(name: category)
+  List.create!(name: category, list_type: 1)
   puts
 end
 
