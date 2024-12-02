@@ -1,5 +1,6 @@
 class MoviesController < ApplicationController
   def index
+    @featured = Movie.all.sample
     @lists = List.all
   end
 

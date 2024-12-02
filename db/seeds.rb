@@ -101,27 +101,7 @@ def create_bookmark(list_id, movies)
   end
 end
 
-def create_collection(collection_data)
-  movie_record = Movie.find_by(tmdb_id: collection_data["id"])
-  puts "==============================================="
-  puts "Creating new collection: #{collection_data["name"]}"
-  # Create Collection List
-  backdrop = "https://image.tmdb.org/t/p/original" + collection_data["backdrop_path"] if collection_data["backdrop_path"] != nil
-  List.exists?(name: collection_data["name"]) ? "Unable to create list" : List.create!(name: collection_data["name"], backdrop: backdrop)
-
-  tmdb_key = ENV["TMDB_KEY"]
-  # Create any missing movies
-  create_movie(collection_data, collection_data["name"])
-  # collection_data["parts"].each do |movie|
-  #   movie_data = api_call(@base_tmdb_endpoint + "#{movie["id"]}?api_key=#{tmdb_key}")
-  #   if movie_record.nil?
-  #     create_movie(movie_data, collection_data["name"])
-  #   else
-  #     movie = movie_record
-  #     movie.tag_list.add(collection_data["name"])
-  #     movie.save!
-  #   end
-  # end
+def create_collection()
 end
 
 # ===============================================
